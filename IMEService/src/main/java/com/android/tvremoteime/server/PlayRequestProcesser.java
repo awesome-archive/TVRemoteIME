@@ -9,6 +9,7 @@ import com.android.tvremoteime.VideoPlayHelper;
 import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
+import player.settings.GlobalSettings;
 
 /**
  * Created by kingt on 2018/1/7.
@@ -26,6 +27,8 @@ public class PlayRequestProcesser implements RequestProcesser {
         if(session.getMethod() == NanoHTTPD.Method.POST){
             switch (fileName) {
                 case "/play":
+                case "/playStop":
+                case "/changePlayFFI":
                     return true;
             }
         }
@@ -37,7 +40,18 @@ public class PlayRequestProcesser implements RequestProcesser {
         switch (fileName) {
             case "/play":
                 if (!TextUtils.isEmpty(params.get("playUrl"))) {
-                    VideoPlayHelper.playUrl(this.context, params.get("playUrl"), "true".equalsIgnoreCase(params.get("useSystem")));
+                    VideoPlayHelper.playUrl(this.context, params.get("playUrl"), 0, "true".equalsIgnoreCase(params.get("useSystem")));
+                }
+                return RemoteServer.createPlainTextResponse(NanoHTTPD.Response.Status.OK,"ok");
+            case "/playStop":
+                xllib.DownloadManager.instance().taskInstance().stopTask();
+                return RemoteServer.createPlainTextResponse(NanoHTTPD.Response.Status.OK,"ok");
+            case "/changePlayFFI":
+                if(!TextUtils.isEmpty(params.get("speedInterval"))){
+                    try{
+                        GlobalSettings.FastForwardInterval = Integer.valueOf(params.get("speedInterval")) * 1000;
+                    }catch (NumberFormatException ignored) {
+                    }
                 }
                 return RemoteServer.createPlainTextResponse(NanoHTTPD.Response.Status.OK,"ok");
             default:

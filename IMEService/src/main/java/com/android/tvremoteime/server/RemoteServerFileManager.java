@@ -5,6 +5,7 @@ package com.android.tvremoteime.server;
  */
 import android.content.Context;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.tvremoteime.IMEService;
@@ -14,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +28,13 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
     private static File filesDir = new File(baseDir, "files");
     private static File tmpDataDir = new File(baseDir, "temp");
     private static File playerCacheDir = new File(baseDir, "xlplayer");
+
+    static File getPlayTorrentFile(){
+        return new File(RemoteServerFileManager.baseDir, "play.torrent");
+    }
+    public static File getScreenShotFile(){
+        return new File(RemoteServerFileManager.baseDir, "screenshot.png");
+    }
     public static void resetBaseDir(Context context){
         baseDir = context.getExternalFilesDir(null);
         filesDir = new File(baseDir, "files");
@@ -46,7 +55,7 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
             }
             try {
                 if (file.exists()) file.delete();
-            }catch (Exception ex){}
+            }catch (Exception ignored){}
         }
 
         public void delete() throws Exception {
@@ -87,8 +96,8 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
 
     @Override
     public NanoHTTPD.TempFile createTempFile(String fileName) throws Exception {
-        if(fileName != null && !fileName.isEmpty()) {
-            fileName = fileName.replaceAll("[\\\\|/]", "").replaceAll("\\.\\.", "");
+        if(!TextUtils.isEmpty(fileName)) {
+            fileName = URLDecoder.decode(fileName, "utf-8").replaceAll("[\\\\|/]", "").replaceAll("\\.\\.", "");
         }
         NanoHTTPD.TempFile tmpFile = new SDCardTempFile(fileName);
         tempFiles.add(tmpFile);
@@ -107,7 +116,7 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
                         return playerCacheDir;
                     }
                 });
-            }catch (Exception ex){}
+            }catch (Exception ignored){}
             return new RemoteServerFileManager();
         }
     }
@@ -117,7 +126,9 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
             if(filesDir.exists()) deleteDirFiles(filesDir);
             if(tmpDataDir.exists()) deleteDirFiles(filesDir);
             if(playerCacheDir != null && playerCacheDir.exists()) deleteDirFiles(playerCacheDir);
-        }catch (Exception ex){
+            File torrentFile = getPlayTorrentFile();
+            if(torrentFile.exists()) torrentFile.delete();
+        }catch (Exception ignored){
 
         }
     }
@@ -127,7 +138,7 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
             try {
                 if(f.isDirectory())deleteDirFiles(f);
                 f.delete();
-            } catch (SecurityException e) {
+            } catch (SecurityException ignored) {
             }
         }
     }
@@ -138,14 +149,17 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
             }
             try {
                 file.delete();
-            } catch (SecurityException e) {
+            } catch (SecurityException ignored) {
             }
         }
     }
     public static void cutFile(File sourceFile, File targetPath){
         if(sourceFile.exists()) {
             File targetFile = new File(targetPath, sourceFile.getName());
-            sourceFile.renameTo(targetFile);
+            try{
+                sourceFile.renameTo(targetFile);
+            } catch (SecurityException ignored) {
+            }
             /**
             if (sourceFile.isDirectory()) {
                 File newDir = new File(targetPath, sourceFile.getName());
@@ -191,7 +205,7 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
             }
             ins.close();
             out.close();
-        }catch (Exception e) {
+        }catch (Exception ignored) {
         }
     }
 }

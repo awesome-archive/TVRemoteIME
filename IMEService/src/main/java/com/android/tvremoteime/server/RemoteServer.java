@@ -3,18 +3,13 @@ package com.android.tvremoteime.server;
 
 import android.content.Context;
 import android.net.wifi.WifiManager;
-import android.text.TextUtils;
 import android.util.Log;
 
-import com.android.tvremoteime.AppPackagesHelper;
+import com.android.tvremoteime.Environment;
 import com.android.tvremoteime.IMEService;
 import com.android.tvremoteime.R;
-import com.android.tvremoteime.VideoPlayHelper;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -25,8 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import fi.iki.elonen.*;
-import player.XLVideoPlayActivity;
-import xllib.FileUtils;
 
 /**
  * Created by kingt on 2018/1/7.
@@ -121,7 +114,9 @@ public class RemoteServer extends NanoHTTPD
     }
     public static String getServerAddress(Context context){
         String ipAddress = getLocalIPAddress(context);
-        Log.d(IMEService.TAG, "ip-address:" + ipAddress);
+        if(Environment.needDebug) {
+            Environment.debug(IMEService.TAG, "ip-address:" + ipAddress);
+        }
         return "http://" + ipAddress + ":" + RemoteServer.serverPort + "/";
     }
 
@@ -141,6 +136,8 @@ public class RemoteServer extends NanoHTTPD
         this.getRequestProcessers.add(new RawRequestProcesser(this.mContext, "/keys.png", R.raw.keys, "image/png"));
         this.getRequestProcessers.add(new RawRequestProcesser(this.mContext, "/ic_dl_folder.png", R.raw.ic_dl_folder, "image/png"));
         this.getRequestProcessers.add(new RawRequestProcesser(this.mContext, "/ic_dl_other.png", R.raw.ic_dl_other, "image/png"));
+        this.getRequestProcessers.add(new RawRequestProcesser(this.mContext, "/ic_dl_video.png", R.raw.ic_dl_video, "image/png"));
+        this.getRequestProcessers.add(new RawRequestProcesser(this.mContext, "/favicon.ico", R.drawable.ic_launcher, "image/x-icon"));
         this.getRequestProcessers.add(new FileRequestProcesser(this.mContext));
         this.getRequestProcessers.add(new AppIconRequestProcesser(this.mContext));
         this.getRequestProcessers.add(new TVRequestProcesser(this.mContext));
@@ -153,13 +150,14 @@ public class RemoteServer extends NanoHTTPD
         this.postRequestProcessers.add(new PlayRequestProcesser(this.mContext));
         this.postRequestProcessers.add(new FileRequestProcesser(this.mContext));
         this.postRequestProcessers.add(new TVRequestProcesser(this.mContext));
+        this.postRequestProcessers.add(new TorrentRequestProcesser(this.mContext));
         this.postRequestProcessers.add(new OtherPostRequestProcesser(this.mContext));
     }
 
 
     @Override
     public Response serve(IHTTPSession session) {
-        Log.d(IMEService.TAG, "接受到HTTP请求：" + session.getMethod() + " " + session.getUri());
+        Log.i(IMEService.TAG, "接收到HTTP请求：" + session.getMethod() + " " + session.getUri());
         if(!session.getUri().isEmpty()) {
             String fileName = session.getUri().trim();
             if (fileName.indexOf('?') >= 0) {

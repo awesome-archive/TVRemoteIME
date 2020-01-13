@@ -4,8 +4,6 @@ import android.content.Context;
 import android.os.Environment;
 import android.text.TextUtils;
 
-import com.android.tvremoteime.AppPackagesHelper;
-import com.android.tvremoteime.VideoPlayHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,7 +37,8 @@ public class FileRequestProcesser  implements RequestProcesser {
     @Override
     public boolean isRequest(NanoHTTPD.IHTTPSession session, String fileName) {
         if(session.getMethod() == NanoHTTPD.Method.GET){
-            return fileName.startsWith("/file/dir/") || fileName.startsWith("/file/download/");
+            return fileName.startsWith("/file/dir/")
+                    || fileName.startsWith("/file/download/");
         }
         else if(session.getMethod() == NanoHTTPD.Method.POST){
             switch (fileName) {
@@ -106,11 +105,13 @@ public class FileRequestProcesser  implements RequestProcesser {
                 JSONObject item = new JSONObject();
                 item.put("name", file.getName());
                 item.put("path", file.getPath().substring(root.length()));
+                item.put("fullPath", file.getPath());
                 if (file.isDirectory()) {
                     //item.put("total", 0);
                     dirs.put(item);
                 }else {
                     item.put("size", file.length());
+                    item.put("isMedia", FileUtils.isMediaFile(file.getName()));
                     files.put(item);
                 }
             }
